@@ -201,15 +201,19 @@ func (c *typedClient) CreateSubResource(ctx context.Context, obj Object, subReso
 	createOpts := &SubResourceCreateOptions{}
 	createOpts.ApplyOptions(opts)
 
-	return o.Post().
+	res := o.Post().
 		NamespaceIfScoped(o.GetNamespace(), o.isNamespaced()).
 		Resource(o.resource()).
 		Name(o.GetName()).
 		SubResource(subResource).
 		Body(subResourceObj).
 		VersionedParams(createOpts.AsCreateOptions(), c.paramCodec).
-		Do(ctx).
-		Into(subResourceObj)
+		Do(ctx)
+	// Some subresources don't return a body.
+	if subResource == "eviction" {
+		return res.Error()
+	}
+	return res.Into(subResourceObj)
 }
 
 // UpdateSubResource used by SubResourceWriter to write status.
